@@ -1,2 +1,2 @@
-# presence
-Log presence of any place.
+# Stayed
+Log stay hours of any place.
