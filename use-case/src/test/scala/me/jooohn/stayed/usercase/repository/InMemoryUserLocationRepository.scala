@@ -13,6 +13,10 @@ class InMemoryUserLocationRepository(
     extends UserLocationRepository[Try] {
   val store = new InMemoryStore[UserLocation.Id, UserLocation](map)(_.id)
 
+  override def findAllBy(userId: UserId): Try[List[UserLocation]] = Try {
+    map.values.filter(_.userId == userId).toList
+  }
+
   override def create(userId: UserId, label: String): Try[UserLocation] = {
     val id = UserLocation.Id(UUID.randomUUID().toString)
     val userLocation = UserLocation.create(id, userId, label)
@@ -23,5 +27,4 @@ class InMemoryUserLocationRepository(
 
   override def resolveBy(userId: UserId, id: UserLocation.Id): Try[Option[UserLocation]] =
     store.find(id).map(_.filter(_.userId == userId))
-
 }

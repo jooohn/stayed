@@ -1,20 +1,32 @@
-import { applyMiddleware, combineReducers, createStore } from 'redux';
+import { Action, applyMiddleware, combineReducers, createStore } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import { combineEpics, createEpicMiddleware, Epic } from 'redux-observable';
 
-import thunk from 'redux-thunk';
-import { default as auth, withGoogle } from './auth';
-import presence, { fetchTransactions, State as PresenceState } from './presence';
-
-export const fetchPresenceTransactions = fetchTransactions;
-export const authenticateWithGoogle = withGoogle;
+import { authEpics, AuthState, default as auth } from './auth';
+import { default as userSetting, userSettingEpics, UserSettingState } from './userSetting';
 
 export type RootState = {
-  presence: PresenceState
+  auth: AuthState
+  userSetting: UserSettingState
 }
 
-export const configureStore = () => createStore(
-  combineReducers({
-    auth,
-    presence,
-  }),
-  applyMiddleware(thunk)
-);
+const rootEpic: Epic<Action, Action, RootState> =
+  combineEpics(
+    authEpics,
+    userSettingEpics,
+  );
+
+export const configureStore = () => {
+  const epicMiddleware = createEpicMiddleware<Action, Action, RootState>();
+  const store = createStore(
+    combineReducers({
+      auth,
+      userSetting,
+    }),
+    composeWithDevTools(applyMiddleware(epicMiddleware))
+  );
+  epicMiddleware.run(rootEpic);
+
+  return store;
+};
+

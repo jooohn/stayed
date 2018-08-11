@@ -1,7 +1,6 @@
 package me.jooohn.stayed.domain
 
 import java.time._
-import java.util.TimeZone
 
 import shapeless.tag
 import shapeless.tag.@@
@@ -28,7 +27,7 @@ case class UserLocation(
         Left(AlreadyEntered(id, enteredAt))
     }
 
-  def exited(at: Instant, zoneId: ZoneId): ErrorOr[UserLocation] = state match {
+  def exited(at: Instant): ErrorOr[UserLocation] = state match {
 
     case Entered(enteredAt) =>
       if (enteredAt.isBefore(at)) {
@@ -37,7 +36,7 @@ case class UserLocation(
           state = Exited,
           stays = newTransaction :: stays
         )
-        Right(exited.discardOldStays(zoneId))
+        Right(exited.discardOldStays)
       } else Left(ExitBeforeEntered(id, at))
 
     case Exited =>
@@ -45,16 +44,12 @@ case class UserLocation(
 
   }
 
-  def discardOldStays(zoneId: ZoneId): UserLocation = stays match {
-    case Nil => this
+  def discardOldStays: UserLocation = stays match {
+    case Nil             => this
     case latestStay :: _ =>
-      val latestYearMonth = latestStay.toDate(zoneId).toYearMonth
+      // Keep more than 3 months
       val borderInstant =
-        latestYearMonth
-          .minusMonths(keepStayInMonths)
-          .atDay(1)
-          .atStartOfDay(zoneId)
-          .toInstant
+        latestStay.from.minusSeconds(60 * 24 * keepStayDays)
       copy(stays = stays.takeWhile(!_.isBefore(borderInstant)))
   }
 
@@ -65,7 +60,7 @@ case class UserLocation(
 
 object UserLocation {
 
-  val keepStayInMonths: Int = 3
+  val keepStayDays: Int = 100
 
   type Id = String @@ UserLocation
   object Id {

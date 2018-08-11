@@ -1,31 +1,27 @@
 package me.jooohn.stayed.adapter.service
 
-import java.time.{YearMonth, ZoneId}
-
 import cats.Monad
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.all._
+import io.circe.Encoder
 import me.jooohn.stayed.adapter.service.protocol.userlocation._
 import me.jooohn.stayed.domain.{UserAccount, UserLocation}
 import me.jooohn.stayed.usecase.UserLocationUseCase
 import me.jooohn.stayed.usecase.UserLocationUseCase.Error
-import org.http4s.dsl.impl.QueryParamDecoderMatcher
-import org.http4s.{AuthedService, QueryParamDecoder, Response}
+import org.http4s.{AuthedService, Response}
 
 class UserLocationService[F[_]: Monad: Sync](userLocationUseCase: UserLocationUseCase[F])
     extends BaseService[F] {
   import UserLocationCommand._
-  import UserLocationService._
 
   val service: AuthedService[UserAccount, F] = AuthedService[UserAccount, F] {
 
-    case GET -> Root / "locations" / userLocationId / "transactions" :? YearMonthQuery(yearMonth) +& TimeZoneQuery(
-          timeZone) as userAccount =>
-      userLocationUseCase.resolve(userAccount.userId, UserLocation.Id(userLocationId)) respond {
-        userLocation =>
-          Ok(userLocation.staysWithin(yearMonth, timeZone))
-      }
+    case GET -> Root / "locations" as userAccount =>
+      for {
+        userLocations <- userLocationUseCase.list(userAccount.userId)
+        response <- Ok(userLocations)
+      } yield response
 
     case req @ POST -> Root / "locations" as userAccount =>
       for {
@@ -57,17 +53,4 @@ class UserLocationService[F[_]: Monad: Sync](userLocationUseCase: UserLocationUs
       fa.fold[F[Response[F]]](error => BadRequest(error.message), f).flatten
 
   }
-}
-
-object UserLocationService {
-  implicit val yearMonthQueryParamDecoder: QueryParamDecoder[YearMonth] =
-    QueryParamDecoder[String].map(YearMonth.parse)
-
-  object YearMonthQuery extends QueryParamDecoderMatcher[YearMonth]("ym")
-
-  implicit val timeZoneQueryParamDecoder: QueryParamDecoder[ZoneId] =
-    QueryParamDecoder[String].map(ZoneId.of)
-
-  object TimeZoneQuery extends QueryParamDecoderMatcher[ZoneId]("timezone")
-
 }

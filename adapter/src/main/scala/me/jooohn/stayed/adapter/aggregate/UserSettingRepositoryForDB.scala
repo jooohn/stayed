@@ -1,13 +1,11 @@
 package me.jooohn.stayed.adapter.aggregate
 
-import java.time.ZoneId
-
 import cats.Monad
 import doobie.implicits._
 import doobie.util.composite.Composite
 import doobie.util.transactor.Transactor
-import me.jooohn.stayed.adapter.DoobieFeatures
-import me.jooohn.stayed.domain.{UserId, UserSetting}
+import me.jooohn.stayed.adapter.instances.UserSettingInstances
+import me.jooohn.stayed.domain.{ApiToken, UserId, UserSetting}
 import me.jooohn.stayed.usecase.repository.UserSettingRepository
 
 class UserSettingRepositoryForDB[F[_]: Monad](val transactor: Transactor[F])
@@ -17,8 +15,8 @@ class UserSettingRepositoryForDB[F[_]: Monad](val transactor: Transactor[F])
 
   override def store(userSetting: UserSetting): F[Unit] = transaction {
     sql"""INSERT INTO user_settings
-         |  VALUES (${userSetting.userId}, ${userSetting.zoneId})
-         |  ON CONFLICT DO UPDATE SET timezone = ${userSetting.zoneId}""".update.run
+            VALUES (${userSetting.userId}, ${userSetting.apiToken})
+            ON CONFLICT (user_id) DO UPDATE SET api_token = ${userSetting.apiToken}""".update.run
       .map(_ => ())
   }
 
@@ -28,8 +26,8 @@ class UserSettingRepositoryForDB[F[_]: Monad](val transactor: Transactor[F])
 
 }
 
-object UserSettingRepositoryForDB extends DoobieFeatures {
+object UserSettingRepositoryForDB extends UserSettingInstances {
   implicit val userSettingComposite: Composite[UserSetting] =
-    Composite[(UserId, ZoneId)]
+    Composite[(UserId, ApiToken)]
       .imap((UserSetting.apply _).tupled)(Function.unlift(UserSetting.unapply))
 }

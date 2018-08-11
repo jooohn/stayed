@@ -77,15 +77,10 @@ class UserLocationSpec extends FunSpec with Matchers with GeneratorDrivenPropert
       } yield (userLocation, exitAt, zoneId)
       forAll(gen) {
         case (userLocation, exitAt, zoneId) =>
-          val result = userLocation.exited(exitAt, zoneId)
+          val result = userLocation.exited(exitAt)
           result.isRight should be(true)
 
-          val border = Instant.from(
-            YearMonth
-              .from(exitAt.atZone(zoneId))
-              .minusMonths(3)
-              .atDay(1)
-              .atStartOfDay(zoneId))
+          val border = exitAt.minusSeconds(60 * 24 * 100)
           result.right.get.stays.exists(stay => stay.isBefore(border)) should be(false)
       }
     }
@@ -104,7 +99,7 @@ class UserLocationSpec extends FunSpec with Matchers with GeneratorDrivenPropert
       } yield (userLocation, exitAt, timeZone)
       forAll(gen) {
         case (userLocation, exitAt, timeZone) =>
-          userLocation.exited(exitAt, timeZone).isLeft should be(true)
+          userLocation.exited(exitAt).isLeft should be(true)
       }
     }
 
@@ -120,7 +115,7 @@ class UserLocationSpec extends FunSpec with Matchers with GeneratorDrivenPropert
 
       forAll(gen) {
         case (userLocation, exitAt, timeZone) =>
-          userLocation.exited(exitAt, timeZone).isLeft should be(true)
+          userLocation.exited(exitAt).isLeft should be(true)
       }
     }
 

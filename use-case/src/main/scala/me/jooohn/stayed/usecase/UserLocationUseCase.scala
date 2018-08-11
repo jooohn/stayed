@@ -7,16 +7,14 @@ import cats.data.EitherT
 import me.jooohn.stayed.domain.{DomainError, UserId, UserLocation}
 import me.jooohn.stayed.usecase.repository._
 
-class UserLocationUseCase[M[_]: Monad](
-    userLocationRepository: UserLocationRepository[M],
-    userSettingRepository: UserSettingRepository[M]) {
+class UserLocationUseCase[M[_]: Monad](userLocationRepository: UserLocationRepository[M]) {
   import UserLocationUseCase._
   import cats.syntax.either._
 
   type ErrorOr[A] = EitherT[M, Error, A]
 
-  def resolve(userId: UserId, userLocationId: UserLocation.Id): ErrorOr[UserLocation] =
-    User(userId) resolveUserLocationBy userLocationId
+  def list(userId: UserId): M[List[UserLocation]] =
+    User(userId).findUserLocations
 
   def create(userId: UserId, label: String): M[UserLocation] =
     User(userId).createUserLocation(label)
@@ -29,11 +27,8 @@ class UserLocationUseCase[M[_]: Monad](
 
   case class User(userId: UserId) {
 
-    def resolveUserLocationBy(userLocationId: UserLocation.Id): ErrorOr[UserLocation] =
-      for {
-        userLocationOpt <- EitherT.right(userLocationRepository.resolveBy(userId, userLocationId))
-        userLocation <- EitherT.fromOption(userLocationOpt, NotFound(userLocationId): Error)
-      } yield userLocation
+    def findUserLocations: M[List[UserLocation]] =
+      userLocationRepository.findAllBy(userId)
 
     def createUserLocation(label: String): M[UserLocation] =
       userLocationRepository.create(userId, label)
@@ -42,10 +37,7 @@ class UserLocationUseCase[M[_]: Monad](
       modifyUserLocation(userLocationId)(_.entered(at))
 
     def exit(userLocationId: UserLocation.Id, at: Instant): ErrorOr[Unit] =
-      for {
-        userSetting <- EitherT.right(userSettingRepository.resolveOrDefault(userId))
-        _ <- modifyUserLocation(userLocationId)(_.exited(at, userSetting.zoneId))
-      } yield ()
+      modifyUserLocation(userLocationId)(_.exited(at))
 
     private[this] def modifyUserLocation(userLocationId: UserLocation.Id)(
         f: UserLocation => Either[DomainError, UserLocation]): ErrorOr[Unit] =
@@ -54,6 +46,13 @@ class UserLocationUseCase[M[_]: Monad](
         modified <- EitherT.fromEither(f(userLocation).leftMap(FromDomainError))
         _ <- storeUserLocation(modified)
       } yield ()
+
+    private[this] def resolveUserLocationBy(
+        userLocationId: UserLocation.Id): ErrorOr[UserLocation] =
+      for {
+        userLocationOpt <- EitherT.right(userLocationRepository.resolveBy(userId, userLocationId))
+        userLocation <- EitherT.fromOption(userLocationOpt, NotFound(userLocationId): Error)
+      } yield userLocation
 
     private[this] def storeUserLocation(userLocation: UserLocation): ErrorOr[Unit] =
       EitherT.right(userLocationRepository.update(userLocation))

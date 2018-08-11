@@ -6,6 +6,8 @@ trait Iso[A, B] extends Prism[A, B] {
 
   override def toOpt(a: A): Option[B] = Some(to(a))
 
+  def inverse: Iso[B, A] = Iso.newInstance(to, from)
+
 }
 object Iso {
 

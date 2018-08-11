@@ -5,8 +5,8 @@ import cats.data.{Kleisli, OptionT}
 import me.jooohn.stayed.adapter.FirebaseAuthenticator
 import me.jooohn.stayed.domain.UserAccount
 import org.http4s.Request
-import org.http4s.headers.Authorization
 import org.http4s.server.AuthMiddleware
+import org.http4s.util.CaseInsensitiveString
 
 class Authentication[F[_]: Monad](authenticator: FirebaseAuthenticator) {
 
@@ -15,8 +15,8 @@ class Authentication[F[_]: Monad](authenticator: FirebaseAuthenticator) {
   def authUser: Kleisli[OptionT[F, ?], Request[F], UserAccount] =
     Kleisli { request =>
       for {
-        authorization <- request.authorization
-        userAccount <- authenticate(authorization.value)
+        idToken <- request.idToken
+        userAccount <- authenticate(idToken)
       } yield userAccount
     }
 
@@ -25,8 +25,10 @@ class Authentication[F[_]: Monad](authenticator: FirebaseAuthenticator) {
 
   implicit class RichRequest(request: Request[F]) {
 
-    def authorization: OptionT[F, Authorization] =
-      OptionT.fromOption[F](request.headers.get(Authorization))
+    def idToken: OptionT[F, String] =
+      OptionT.fromOption[F](
+        request.headers.get(CaseInsensitiveString("X-ID-TOKEN")).map(_.value)
+      )
 
   }
 

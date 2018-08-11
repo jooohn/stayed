@@ -1,6 +1,8 @@
 package me.jooohn.stayed.usercase.repository
 
-import me.jooohn.stayed.domain.{UserId, UserSetting}
+import java.util.UUID
+
+import me.jooohn.stayed.domain.{ApiToken, UserId, UserSetting}
 import me.jooohn.stayed.usecase.repository.UserSettingRepository
 
 import scala.collection.mutable

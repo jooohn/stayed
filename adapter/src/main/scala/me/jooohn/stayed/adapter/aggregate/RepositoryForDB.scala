@@ -3,9 +3,8 @@ package me.jooohn.stayed.adapter.aggregate
 import cats.Monad
 import doobie._
 import doobie.implicits._
-import me.jooohn.stayed.adapter.DoobieFeatures
 
-trait RepositoryForDB[F[_]] extends DoobieFeatures {
+trait RepositoryForDB[F[_]] {
 
   def transactor: Transactor[F]
 

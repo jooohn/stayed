@@ -3,11 +3,8 @@ package me.jooohn.stayed.usercase
 import cats.data.EitherT
 import cats.instances.try_._
 import me.jooohn.stayed.usecase.UserLocationUseCase
-import me.jooohn.stayed.usecase.repository.{UserLocationRepository, UserSettingRepository}
-import me.jooohn.stayed.usercase.repository.{
-  InMemoryUserLocationRepository,
-  InMemoryUserSettingRepository
-}
+import me.jooohn.stayed.usecase.repository.UserLocationRepository
+import me.jooohn.stayed.usercase.repository.InMemoryUserLocationRepository
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSpec, Matchers}
@@ -47,11 +44,9 @@ class UserLocationUseCaseSpec extends FunSpec with Matchers with GeneratorDriven
   }
 
   def newUseCase(
-      userLocationRepository: UserLocationRepository[Try] = new InMemoryUserLocationRepository(),
-      userSettingRepository: UserSettingRepository[Try] = new InMemoryUserSettingRepository()
+      userLocationRepository: UserLocationRepository[Try] = new InMemoryUserLocationRepository()
   ): UserLocationUseCase[Try] = new UserLocationUseCase[Try](
-    userLocationRepository,
-    userSettingRepository
+    userLocationRepository
   )
 
 }
