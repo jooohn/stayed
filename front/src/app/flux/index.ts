@@ -3,17 +3,20 @@ import { composeWithDevTools } from 'redux-devtools-extension';
 import { combineEpics, createEpicMiddleware, Epic } from 'redux-observable';
 
 import { authEpics, AuthState, default as auth } from './auth';
+import { default as userLocation, userLocationEpics, UserLocationState } from './userLocation';
 import { default as userSetting, userSettingEpics, UserSettingState } from './userSetting';
 
 export type RootState = {
   auth: AuthState
-  userSetting: UserSettingState
+  userSetting: UserSettingState,
+  userLocation: UserLocationState,
 }
 
 const rootEpic: Epic<Action, Action, RootState> =
   combineEpics(
     authEpics,
     userSettingEpics,
+    userLocationEpics,
   );
 
 export const configureStore = () => {
@@ -22,6 +25,7 @@ export const configureStore = () => {
     combineReducers({
       auth,
       userSetting,
+      userLocation,
     }),
     composeWithDevTools(applyMiddleware(epicMiddleware))
   );

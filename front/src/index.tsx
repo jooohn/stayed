@@ -7,7 +7,6 @@ import { Provider } from 'react-redux';
 import './App.css';
 import { configureStore } from './app/flux';
 import App from './app/scenes/App';
-import './index.css';
 import registerServiceWorker from './registerServiceWorker';
 import { theme } from './theme';
 

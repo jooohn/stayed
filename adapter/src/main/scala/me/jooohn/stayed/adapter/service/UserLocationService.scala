@@ -35,7 +35,7 @@ class UserLocationService[F[_]: Monad: Sync](userLocationUseCase: UserLocationUs
     command match {
       case Create(label) =>
         userLocationUseCase.create(userAccount.userId, label) flatMap { userLocation =>
-          Created(UserLocationResponse.Created(userLocation.id))
+          Created(userLocation)
         }
       case Enter(userLocationId, at) =>
         userLocationUseCase.enter(userAccount.userId, userLocationId, at) respond { _ =>

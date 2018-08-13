@@ -1,4 +1,4 @@
-import { createStyles, WithStyles, withStyles } from '@material-ui/core';
+import { createStyles, Theme, WithStyles, withStyles } from '@material-ui/core';
 import * as firebase from 'firebase';
 import * as React from 'react';
 import { connect } from 'react-redux';
@@ -8,11 +8,11 @@ import Home from '../Home';
 import Login from '../Login';
 import Header from './_/Header';
 
-const styles = createStyles({
+const styles = (theme: Theme) => createStyles({
   main: {
     display: 'flex',
     flex: '1 1 100%',
-  }
+  },
 });
 
 type Props = {
@@ -36,7 +36,10 @@ class App extends React.Component<Props> {
       <React.Fragment>
         <Header currentUser={currentUser}/>
         <main className={classes.main}>
-          {currentUser === null ? <Login/> : <Home/>}
+          {currentUser === null
+            ? <Login/>
+            : <Home/>
+          }
         </main>
       </React.Fragment>
     );
