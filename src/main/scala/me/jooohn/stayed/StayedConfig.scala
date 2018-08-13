@@ -1,6 +1,6 @@
 package me.jooohn.stayed
 
-import java.io.{File, FileInputStream, InputStream}
+import java.io.{ByteArrayInputStream, File, FileInputStream, InputStream}
 
 import cats.data.ValidatedNel
 import cats.implicits._
@@ -58,10 +58,10 @@ object StayedConfig {
     ).mapN(PostgresqlConfig.apply)
 
   private def loadFirebaseOptions(config: Config): ErrorOr[FirebaseOptions] =
-    config.safeString("firebase.serviceAccountKeyPath").andThen { path =>
+    config.safeString("firebase.serviceAccountKey").andThen { key =>
       Try {
         new FirebaseOptions.Builder()
-          .setCredentials(GoogleCredentials.fromStream(new FileInputStream(path)))
+          .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(key.getBytes)))
           .build()
       }.toEither.leftMap(e => LoadError(e.getMessage)).toValidatedNel
     }

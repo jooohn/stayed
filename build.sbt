@@ -1,5 +1,14 @@
 import Dependencies._
 
+enablePlugins(JavaServerAppPackaging)
+
+// Flyway
+enablePlugins(FlywayPlugin)
+flywayUrl := sys.env.getOrElse("POSTGRESQL_URL", "")
+flywayUser := sys.env.getOrElse("POSTGRESQL_USER", "")
+flywayPassword := sys.env.getOrElse("POSTGRESQL_PASS", "")
+flywayLocations += "migration"
+
 lazy val baseSettings = Seq(
   organization := "me.jooohn",
   version := "0.0.1",
