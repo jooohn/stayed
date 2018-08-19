@@ -37,7 +37,8 @@ class UserLocationUseCase[M[_]: Monad](userLocationRepository: UserLocationRepos
       modifyUserLocation(userLocationId)(_.entered(at))
 
     def exit(userLocationId: UserLocation.Id, at: Instant): ErrorOr[Unit] =
-      modifyUserLocation(userLocationId)(_.exited(at))
+      modifyUserLocation(userLocationId)(
+        _.exited(at).map(_.discardOldStays(UserLocationUseCase.keepStaysInDays)))
 
     private[this] def modifyUserLocation(userLocationId: UserLocation.Id)(
         f: UserLocation => Either[DomainError, UserLocation]): ErrorOr[Unit] =
@@ -61,6 +62,8 @@ class UserLocationUseCase[M[_]: Monad](userLocationRepository: UserLocationRepos
 }
 
 object UserLocationUseCase {
+  val keepStaysInDays = 100
+
   sealed abstract class Error(val message: String)
   case class NotFound(userLocationId: UserLocation.Id)
       extends Error(

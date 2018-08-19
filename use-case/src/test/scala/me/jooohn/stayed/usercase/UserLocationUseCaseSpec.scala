@@ -1,5 +1,7 @@
 package me.jooohn.stayed.usercase
 
+import java.time.temporal.{ChronoUnit, TemporalUnit}
+
 import cats.data.EitherT
 import cats.instances.try_._
 import me.jooohn.stayed.usecase.UserLocationUseCase
@@ -41,6 +43,39 @@ class UserLocationUseCaseSpec extends FunSpec with Matchers with GeneratorDriven
       }
     }
 
+  }
+
+  describe("exit with too old stays") {
+
+    it("discards old stays") {
+      forAll(for {
+        userLocation <- exitedUserLocationGen
+        stays <- nonEmptyStaysGen
+        daysAfter <- Gen.chooseNum(101, 300)
+      } yield (userLocation.copy(stays = stays), daysAfter)) {
+        case (userLocation, d) =>
+          val userLocationRepository =
+            new InMemoryUserLocationRepository(
+              collection.mutable.Map(
+                userLocation.id -> userLocation
+              ))
+
+          val nextEnterAt =
+            userLocation.stays.head.to.plus(d, ChronoUnit.DAYS)
+          val nextExitAt = nextEnterAt.plusSeconds(100)
+
+          val useCase = newUseCase(userLocationRepository = userLocationRepository)
+
+          val result = for {
+            _ <- useCase.enter(userLocation.userId, userLocation.id, nextEnterAt)
+            _ <- useCase.exit(userLocation.userId, userLocation.id, nextExitAt)
+          } yield ()
+          result.isRight.get should equal(true)
+
+          val stored = userLocationRepository.map(userLocation.id)
+          stored.stays.length should be(1)
+      }
+    }
   }
 
   def newUseCase(

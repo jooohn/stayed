@@ -79,9 +79,6 @@ class UserLocationSpec extends FunSpec with Matchers with GeneratorDrivenPropert
         case (userLocation, exitAt, zoneId) =>
           val result = userLocation.exited(exitAt)
           result.isRight should be(true)
-
-          val border = exitAt.minusSeconds(60 * 24 * 100)
-          result.right.get.stays.exists(stay => stay.isBefore(border)) should be(false)
       }
     }
 

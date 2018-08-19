@@ -3,6 +3,7 @@ package me.jooohn.stayed.domain.gen
 import java.time.{Instant, ZoneId, ZoneOffset}
 import java.util.TimeZone
 
+import me.jooohn.stayed.domain.UserLocation.State.Exited
 import me.jooohn.stayed.domain._
 import org.scalacheck.Gen
 import shapeless.tag
@@ -68,5 +69,10 @@ object UserLocationGen {
       state <- stateGen
       stays <- staysGen
     } yield UserLocation(id, userId, label, state, stays)
+
+  val exitedUserLocationGen: Gen[UserLocation] =
+    userLocationGen.map { userLocation =>
+      userLocation.copy(state = Exited)
+    }
 
 }

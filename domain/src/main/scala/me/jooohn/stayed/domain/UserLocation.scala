@@ -32,11 +32,11 @@ case class UserLocation(
     case Entered(enteredAt) =>
       if (enteredAt.isBefore(at)) {
         val newTransaction = Stay(from = enteredAt, to = at)
-        val exited = copy(
-          state = Exited,
-          stays = newTransaction :: stays
-        )
-        Right(exited.discardOldStays)
+        Right(
+          copy(
+            state = Exited,
+            stays = newTransaction :: stays
+          ))
       } else Left(ExitBeforeEntered(id, at))
 
     case Exited =>
@@ -44,12 +44,12 @@ case class UserLocation(
 
   }
 
-  def discardOldStays: UserLocation = stays match {
+  def discardOldStays(keepStaysInDays: Int): UserLocation = stays match {
     case Nil             => this
     case latestStay :: _ =>
       // Keep more than 3 months
       val borderInstant =
-        latestStay.from.minusSeconds(60 * 24 * keepStayDays)
+        latestStay.from.minusSeconds(60 * 24 * keepStaysInDays)
       copy(stays = stays.takeWhile(!_.isBefore(borderInstant)))
   }
 
@@ -59,8 +59,6 @@ case class UserLocation(
 }
 
 object UserLocation {
-
-  val keepStayDays: Int = 100
 
   type Id = String @@ UserLocation
   object Id {
