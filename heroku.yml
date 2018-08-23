@@ -1,8 +1,10 @@
 build:
   docker:
     web: Dockerfile
-    migration: migration/Dockerfile
+    release: migration/Dockerfile
 release:
-  image: migration
   command:
-    - migrate
+    - '/go/bin/goose postgres "$DBSTRING" up'
+  image: release
+run:
+  web: /usr/bin/java -Xms128M -Xmx128M -jar app.jar

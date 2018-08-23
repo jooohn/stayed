@@ -38,6 +38,10 @@ const actions = {
   fetchUserSetting
 };
 
+export const userSettingSelectors = {
+  getUserSetting: (state: RootState) => state.userSetting
+};
+
 export default (state: UserSettingState = null, action: ActionType<typeof actions>): UserSettingState => {
   switch (action.type) {
     case getType(fetchUserSetting.success):

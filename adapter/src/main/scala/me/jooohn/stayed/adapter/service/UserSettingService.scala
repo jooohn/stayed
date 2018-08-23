@@ -12,7 +12,7 @@ class UserSettingService[F[_]: Monad: Sync](userSettingUseCase: UserSettingUseCa
 
   val service: AuthedService[UserAccount, F] = AuthedService[UserAccount, F] {
 
-    case GET -> Root / "user_setting" as userAccount =>
+    case GET -> Root / "setting" as userAccount =>
       for {
         userSetting <- userSettingUseCase.resolveOrCreate(userAccount.userId)
         response <- Ok(userSetting)

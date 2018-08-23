@@ -3,24 +3,39 @@ import { combineEpics, Epic } from 'redux-observable';
 import { of } from 'rxjs';
 import { fromPromise } from 'rxjs/internal-compatibility';
 import { catchError, filter, map, switchMap } from 'rxjs/operators';
-import { ActionType, createAction, createAsyncAction, getType, isActionOf } from 'typesafe-actions';
+import {
+  ActionType,
+  createAction,
+  createAsyncAction,
+  createStandardAction,
+  getType,
+  isActionOf
+} from 'typesafe-actions';
 import { CreateUserLocationPayload, default as api } from '../shared/api';
-import { UserLocation } from '../types/userLocation';
+import { UserLocation, UserLocationId } from '../types/userLocation';
 import { RootState } from './index';
 
 export type UserLocationState = {
+
   userLocations: UserLocation[]
+
+  activeUserLocationIds: UserLocationId[]
+
   loading: boolean
 
   registrationDialog: {
     error?: string
   } | null
+
 }
 const initialState: UserLocationState = {
   userLocations: [],
+  activeUserLocationIds: [],
   loading: false,
   registrationDialog: null,
 };
+
+const toggleUserLocationSelection = createStandardAction('userLocation/TOGGLE_SELECTION')<UserLocationId>();
 
 const fetchUserLocations = createAsyncAction(
   'userLocation/FETCH_REQUEST',
@@ -65,6 +80,7 @@ const createUserLocationEpic: Epic<Action, Action, RootState> =
       );
 
 export const userLocationActions = {
+  toggleUserLocationSelection,
   openUserLocationRegistrationDialog,
   closeUserLocationRegistrationDialog,
 
@@ -77,13 +93,21 @@ export const userLocationEpics = combineEpics(
 );
 
 const actions = {
+  toggleUserLocationSelection,
   openUserLocationRegistrationDialog,
   closeUserLocationRegistrationDialog,
   fetchUserLocations,
   createUserLocation,
 };
 
+const isActive =
+  (state: UserLocationState) =>
+    (userLocationId: UserLocationId) =>
+      state.activeUserLocationIds.some(id => id === userLocationId);
+
 export const userLocationSelectors = {
+  isActive: (state: RootState) => (userLocationId: UserLocationId) =>
+    isActive(state.userLocation)(userLocationId),
   getUserLocations: (state: RootState) => state.userLocation.userLocations,
   isLoading: (state: RootState) => state.userLocation.loading,
   isRegistrationDialogOpen: (state: RootState) => state.userLocation.registrationDialog !== null,
@@ -91,10 +115,23 @@ export const userLocationSelectors = {
 
 export default (state: UserLocationState = initialState, action: ActionType<typeof actions>): UserLocationState => {
   switch (action.type) {
+    case getType(toggleUserLocationSelection):
+      const userLocationId = action.payload;
+      return {
+        ...state,
+        activeUserLocationIds: (isActive(state)(userLocationId))
+          ? state.activeUserLocationIds.filter(id => id !== userLocationId)
+          : [...state.activeUserLocationIds, userLocationId],
+      };
     case getType(fetchUserLocations.request):
       return { ...state, loading: true };
     case getType(fetchUserLocations.success):
-      return { ...state, userLocations: action.payload, loading: false };
+      return {
+        ...state,
+        userLocations: action.payload,
+        activeUserLocationIds: action.payload.map(ul => ul.id),
+        loading: false,
+      };
     case getType(fetchUserLocations.failure):
       alert(action.payload);
       return { ...state, loading: false };

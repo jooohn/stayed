@@ -43,26 +43,28 @@ object Main extends StreamApp[IO] {
   private val userSettingRepository = new UserSettingRepositoryForDB(transactor)
   private val apiTokenGenerator = new UUIDApiTokenGenerator[IO]
 
-  private val httpService: HttpService[IO] =
-    List(
-      new UserLocationService(
-        new UserLocationUseCase(userLocationRepository)
-      ).service,
-      new UserSettingService(
-        new UserSettingUseCase(
-          userSettingRepository,
-          apiTokenGenerator
-        )
-      ).service
-    ).map(withAuthentication).reduce(_ <+> _)
+  private val apiService: HttpService[IO] =
+    withAuthentication(
+      List(
+        new UserLocationService(
+          new UserLocationUseCase(userLocationRepository)
+        ).service,
+        new UserSettingService(
+          new UserSettingUseCase(
+            userSettingRepository,
+            apiTokenGenerator
+          )
+        ).service
+      ).reduce(_ <+> _)
+    )
 
   override def stream(
       args: List[String],
       requestShutdown: IO[Unit]): fs2.Stream[IO, StreamApp.ExitCode] =
     BlazeBuilder[IO]
       .bindHttp(config.server.port, "0.0.0.0")
+      .mountService(apiService, "/api")
       .mountService(StaticFileService[IO])
-      .mountService(httpService, "/api")
       .serve
 
 }

@@ -1,9 +1,16 @@
 import {
-  createStyles, Divider,
+  Checkbox,
+  createStyles,
+  Divider,
   Drawer,
-  Grid, Icon,
+  Grid,
+  Icon,
+  IconButton,
   List,
-  ListItem, ListItemIcon, ListItemText,
+  ListItem,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  ListItemText,
   Theme,
   Typography,
   WithStyles,
@@ -13,8 +20,9 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { RootState } from '../../flux';
 import { userLocationActions, userLocationSelectors } from '../../flux/userLocation';
-import { userSettingActions } from '../../flux/userSetting';
-import { UserLocation } from '../../types/userLocation';
+import { userSettingActions, userSettingSelectors } from '../../flux/userSetting';
+import { UserLocation, UserLocationId } from '../../types/userLocation';
+import { UserSetting } from '../../types/userSetting';
 import RegistrationDialog from './_/RegistrationDialog';
 
 const styles = (theme: Theme) => createStyles({
@@ -28,7 +36,7 @@ const styles = (theme: Theme) => createStyles({
   toolbar: theme.mixins.toolbar,
   drawerPaper: {
     position: 'relative',
-    width: 240,
+    width: 260,
   },
   main: {
     backgroundColor: theme.palette.background.default,
@@ -38,8 +46,11 @@ const styles = (theme: Theme) => createStyles({
 });
 
 type Props = {
+  isActive: (userLocationId: UserLocationId) => boolean
+  userSetting: UserSetting | null
   userLocationLoading: boolean
   userLocations: UserLocation[]
+  toggleUserLocationSelection: (userLocationId: UserLocationId) => void
   openUserLocationRegistrationDialog: () => void
   fetchUserSetting: () => void
   fetchUserLocations: () => void
@@ -82,11 +93,17 @@ class Home extends React.Component<Props, State> {
     this.props.openUserLocationRegistrationDialog();
   };
 
+  public handleToggle = (userLocationId: UserLocationId) => () => {
+    this.props.toggleUserLocationSelection(userLocationId);
+  };
+
   public render() {
     const {
       classes,
+      isActive,
       userLocationLoading,
       userLocations,
+      userSetting,
     } = this.props;
     return (
       <div className={classes.container}>
@@ -108,12 +125,25 @@ class Home extends React.Component<Props, State> {
           </List>
           <Divider/>
           <List component="nav">
-            <ListItem button={true}>
-              <ListItemText primary="All"/>
-            </ListItem>
             {userLocations.map(userLocation => (
-              <ListItem key={userLocation.id} button={true}>
+              <ListItem
+                key={userLocation.id}
+                dense={true}
+                role={undefined}
+                button={true}
+                onClick={this.handleToggle(userLocation.id)}
+              >
+                <Checkbox
+                  checked={isActive(userLocation.id)}
+                  tabIndex={-1}
+                  disableRipple={true}
+                />
                 <ListItemText primary={userLocation.label} />
+                <ListItemSecondaryAction>
+                  <IconButton>
+                    <Icon>settings</Icon>
+                  </IconButton>
+                </ListItemSecondaryAction>
               </ListItem>
             ))}
           </List>
@@ -125,11 +155,22 @@ class Home extends React.Component<Props, State> {
           </Typography>
           <Grid container={true}>
             <Grid item={true} xs={12}>
-              {!userLocationLoading && (
-                (userLocations.length === 0)
-                  ? <span>空！</span>
-                  : <span>あり</span>
-              )}
+              {!userLocationLoading && userSetting !== null && userLocations.map(userLocation => (
+                <div>
+                <pre>
+                  {window.location.origin}/api/locations/{userLocation.id}
+                </pre>
+                  <pre>
+                    {JSON.stringify({
+                      apiToken: userSetting.apiToken,
+                      type: "{{EnteredOrExited}}",
+                      attributes: {
+                        occurredAt: "{{OccurredAt}}"
+                      }
+                    })}
+                </pre>
+                </div>
+              ))}
             </Grid>
           </Grid>
         </div>
@@ -139,9 +180,13 @@ class Home extends React.Component<Props, State> {
 
 }
 export default connect((state: RootState) => ({
+  isActive: userLocationSelectors.isActive(state),
+  userSetting: userSettingSelectors.getUserSetting(state),
   userLocations: userLocationSelectors.getUserLocations(state),
   userLocationLoading: userLocationSelectors.isLoading(state),
 }), (dispatch) => ({
+  toggleUserLocationSelection:
+    (userLocationId: UserLocationId) => dispatch(userLocationActions.toggleUserLocationSelection(userLocationId)),
   openUserLocationRegistrationDialog: () => dispatch(userLocationActions.openUserLocationRegistrationDialog()),
   fetchUserSetting: () => dispatch(userSettingActions.fetchUserSetting()),
   fetchUserLocations: () => dispatch(userLocationActions.fetchUserLocations()),

@@ -1,5 +1,6 @@
+export type UserLocationId = string
 export type UserLocation = {
-  id: string
+  id: UserLocationId
   label: string
   state: UserLocationState
   stays: UserLocationStay[]

@@ -33,7 +33,7 @@ const asJson = async (responsePromise: Promise<Response>): Promise<any> =>
   responsePromise.then(response => response.json());
 
 const fetchUserSetting = async (): Promise<UserSetting> =>
-  asJson(fetchWithAuth(get('/api/user_setting')));
+  asJson(fetchWithAuth(get('/api/setting')));
 
 
 export type CreateUserLocationPayload = { label: string };

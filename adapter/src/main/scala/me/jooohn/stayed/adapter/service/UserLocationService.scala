@@ -5,13 +5,14 @@ import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.all._
 import io.circe.Encoder
+import me.jooohn.stayed.adapter.service.protocol.userlocation.UserLocationsCommand.Create
 import me.jooohn.stayed.adapter.service.protocol.userlocation._
 import me.jooohn.stayed.domain.{UserAccount, UserLocation}
 import me.jooohn.stayed.usecase.UserLocationUseCase
 import me.jooohn.stayed.usecase.UserLocationUseCase.Error
 import org.http4s.{AuthedService, Response}
 
-class UserLocationService[F[_]: Monad: Sync](userLocationUseCase: UserLocationUseCase[F])
+class UserLocationService[F[_]: Monad: Sync](useCase: UserLocationUseCase[F])
     extends BaseService[F] {
   import UserLocationCommand._
 
@@ -19,33 +20,26 @@ class UserLocationService[F[_]: Monad: Sync](userLocationUseCase: UserLocationUs
 
     case GET -> Root / "locations" as userAccount =>
       for {
-        userLocations <- userLocationUseCase.list(userAccount.userId)
+        userLocations <- useCase.list(userAccount.userId)
         response <- Ok(userLocations)
       } yield response
 
     case req @ POST -> Root / "locations" as userAccount =>
-      for {
-        command <- req.req.as[UserLocationCommand]
-        response <- handleCommand(userAccount, command)
-      } yield response
+      req.req.as[UserLocationsCommand] flatMap {
+        case Create(label) =>
+          useCase.create(userAccount.userId, label) flatMap (Created(_))
+      }
+
+    case req @ POST -> Root / "locations" / userLocationIdStr as userAccount =>
+      val userLocationId = UserLocation.Id(userLocationIdStr)
+      req.req.as[UserLocationCommand] flatMap {
+        case Enter(at) =>
+          useCase.enter(userAccount.userId, userLocationId, at) respond (_ => Ok())
+        case Exit(at) =>
+          useCase.exit(userAccount.userId, userLocationId, at) respond (_ => Ok())
+      }
 
   }
-
-  def handleCommand(userAccount: UserAccount, command: UserLocationCommand): F[Response[F]] =
-    command match {
-      case Create(label) =>
-        userLocationUseCase.create(userAccount.userId, label) flatMap { userLocation =>
-          Created(userLocation)
-        }
-      case Enter(userLocationId, at) =>
-        userLocationUseCase.enter(userAccount.userId, userLocationId, at) respond { _ =>
-          Ok()
-        }
-      case Exit(userLocationId, at) =>
-        userLocationUseCase.exit(userAccount.userId, userLocationId, at) respond { _ =>
-          Ok()
-        }
-    }
 
   implicit class EitherTErrorOps[A](fa: EitherT[F, Error, A]) {
 
