@@ -15,6 +15,7 @@ import org.http4s._
 import scala.concurrent.ExecutionContext
 
 object Main extends StreamApp[IO] {
+
   implicit val ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -42,7 +43,7 @@ object Main extends StreamApp[IO] {
   private val userSettingRepository = new UserSettingRepositoryForDB(transactor)
   private val apiTokenGenerator = new UUIDApiTokenGenerator[IO]
 
-  private val services: HttpService[IO] =
+  private val httpService: HttpService[IO] =
     List(
       new UserLocationService(
         new UserLocationUseCase(userLocationRepository)
@@ -59,8 +60,9 @@ object Main extends StreamApp[IO] {
       args: List[String],
       requestShutdown: IO[Unit]): fs2.Stream[IO, StreamApp.ExitCode] =
     BlazeBuilder[IO]
-      .bindHttp(config.server.port, "localhost")
-      .mountService(services, "/api")
+      .bindHttp(config.server.port, "0.0.0.0")
+      .mountService(StaticFileService[IO])
+      .mountService(httpService, "/api")
       .serve
 
 }

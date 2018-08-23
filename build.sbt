@@ -9,6 +9,11 @@ flywayUser := sys.env.getOrElse("POSTGRESQL_USER", "")
 flywayPassword := sys.env.getOrElse("POSTGRESQL_PASS", "")
 flywayLocations += "migration"
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
+
 lazy val baseSettings = Seq(
   organization := "me.jooohn",
   version := "0.0.1",

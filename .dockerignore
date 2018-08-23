@@ -1,12 +1,12 @@
 /src/main/resources/static
+/target
 /adapter/target
 /domain/target
 /use-case/target
-/target
 /project/project
 /project/target
 /infrastructure/target
 /front/node_modules
 /front/build
-/app.jar
-/.env*
+/now.json
+/Dockerfile
